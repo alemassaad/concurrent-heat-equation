@@ -1,62 +1,82 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
-#include <string.h> // Include for memcpy
 
-#define NX 100  // Number of x grid points
-#define NY 100  // Number of y grid points
-#define DX 0.01 // Grid spacing in x direction
-#define DY 0.01 // Grid spacing in y direction
-#define DT 0.01 // Time step
-#define N_STEPS 1000 // Number of time steps
-#define KAPPA 0.1  // Diffusion coefficient
+#define NX 100
+#define NY 100
+#define DELTA 0.01
+#define GAMMA 0.00001  // Adjusted for stability
+#define N_STEPS 600
 
-void initialize(double u[NX][NY]);
-void update(double u[NX][NY], double u_next[NX][NY], int step);
-void write_to_file(double u[NX][NY]);
+void initialize(double U[NX][NY]);
+void update(double U[NX][NY], double U_next[NX][NY]);
+void write_to_file(double U[NX][NY], const char *filename);
 
 int main() {
-    double u[NX][NY], u_next[NX][NY];
-    initialize(u);
+    double U[NX][NY], U_next[NX][NY];
+    initialize(U);
+
     for (int step = 0; step < N_STEPS; step++) {
-        update(u, u_next, step);  // Pass step here
-        memcpy(u, u_next, sizeof(u));
-        if (step % 100 == 0) {
-            write_to_file(u);
-        }
+        update(U, U_next);
+        memcpy(U, U_next, sizeof(U));
+        char filename[100];
+        sprintf(filename, "output/output_%d.dat", step);
+        write_to_file(U, filename);
     }
+
     return 0;
 }
 
-void initialize(double u[NX][NY]) {
+void initialize(double U[NX][NY]) {
     for (int i = 0; i < NX; i++) {
         for (int j = 0; j < NY; j++) {
-            u[i][j] = 0.0;
+            U[i][j] = 0.0;
         }
     }
-    u[NX/2][NY/2] = 100.0; // Initial heat source at the center
+    U[NX/2][NY/2] = 100000.0;  // Increase initial heat source
 }
 
-void update(double u[NX][NY], double u_next[NX][NY], int step) {
+void update(double U[NX][NY], double U_next[NX][NY]) {
+    double lambda = GAMMA / (DELTA * DELTA);
+
+    if (lambda >= 0.5) {
+        printf("Error: lambda = %f is not stable\n", lambda);
+        exit(1);
+    }
+
     for (int i = 1; i < NX-1; i++) {
         for (int j = 1; j < NY-1; j++) {
-            double u_xx = (u[i+1][j] - 2*u[i][j] + u[i-1][j]) / (DX*DX);
-            double u_yy = (u[i][j+1] - 2*u[i][j] + u[i][j-1]) / (DY*DY);
-            u_next[i][j] = u[i][j] + DT * KAPPA * (u_xx + u_yy);
-            if (isnan(u_next[i][j])) {
-                printf("NaN detected at step %d, i=%d, j=%d\n", step, i, j);
-                printf("u_xx: %f, u_yy: %f, u[i][j]: %f\n", u_xx, u_yy, u[i][j]);
+            double term = (1 - 4 * lambda) * U[i][j] 
+                        + lambda * (U[i+1][j] + U[i][j+1] + U[i-1][j] + U[i][j-1]);
+
+            if (isnan(term)) {
+                printf("NaN detected at i=%d, j=%d\n", i, j);
+                exit(1);
             }
+            U_next[i][j] = term;
         }
+    }
+
+    for (int i = 0; i < NX; i++) {
+        U_next[i][0] = U_next[i][1];
+        U_next[i][NY-1] = U_next[i][NY-2];
+    }
+    for (int j = 0; j < NY; j++) {
+        U_next[0][j] = U_next[1][j];
+        U_next[NX-1][j] = U_next[NX-2][j];
     }
 }
 
-
-void write_to_file(double u[NX][NY]) {
-    FILE *fp = fopen("output.dat", "w");
+void write_to_file(double U[NX][NY], const char *filename) {
+    FILE *fp = fopen(filename, "w");
+    if (fp == NULL) {
+        printf("Error opening file\n");
+        exit(1);
+    }
     for (int i = 0; i < NX; i++) {
         for (int j = 0; j < NY; j++) {
-            fprintf(fp, "%f ", u[i][j]);
+            fprintf(fp, "%f ", U[i][j]);
         }
         fprintf(fp, "\n");
     }
