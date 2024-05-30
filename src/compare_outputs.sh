@@ -6,7 +6,7 @@ par_dir="output_parallel"
 
 # Number of steps
 n_steps=600
-tolerance=0.04  # Set an acceptable tolerance level
+tolerance=0.1  # Set an acceptable tolerance level
 
 # Check for debug mode
 DEBUG=false

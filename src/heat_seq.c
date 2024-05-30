@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include "initialize.h"
 
 #define NX 100
 #define NY 100
@@ -9,7 +10,6 @@
 #define GAMMA 0.00001  // Adjusted for stability
 #define N_STEPS 600
 
-void initialize(double *U, int nx, int ny);
 void update(double *U, double *U_next, int nx, int ny);
 void write_to_file(double *U, int nx, int ny, const char *filename);
 
@@ -37,15 +37,6 @@ int main() {
     free(U_next);
 
     return 0;
-}
-
-void initialize(double *U, int nx, int ny) {
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            U[i * ny + j] = 0.0;
-        }
-    }
-    U[(nx/2) * ny + (ny/2)] = 100000.0;  // Increase initial heat source
 }
 
 void update(double *U, double *U_next, int nx, int ny) {

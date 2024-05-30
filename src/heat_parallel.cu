@@ -1,18 +1,9 @@
-//--------
-//
-// Commands to learn on lab computers to fix cuda path.
-//
-// $ export PATH=/usr/local/cuda/bin:$PATH
-// $ export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
-// $ source ~/.bashrc
-//
-//--------
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "initialize.h"
 
 #define NX 100
 #define NY 100
@@ -28,15 +19,6 @@ __global__ void update(double* U, double* U_next, int nx, int ny, double lambda)
         U_next[i * ny + j] = (1 - 4 * lambda) * U[i * ny + j] 
                            + lambda * (U[(i+1) * ny + j] + U[i * ny + (j+1)] + U[(i-1) * ny + j] + U[i * ny + (j-1)]);
     }
-}
-
-void initialize(double* U, int nx, int ny) {
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            U[i * ny + j] = 0.0;
-        }
-    }
-    U[(nx/2) * ny + (ny/2)] = 100000.0;
 }
 
 void write_to_file(double* U, int nx, int ny, const char *filename) {
