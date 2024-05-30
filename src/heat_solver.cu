@@ -1,18 +1,18 @@
+//--------
+//
+// Commands to learn on lab computers to fix cuda path.
+//
+// $ export PATH=/usr/local/cuda/bin:$PATH
+// $ export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+// $ source ~/.bashrc
+//
+//--------
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-//--------
-//
-// Commands to learn on lab computers to fix cuda path.
-//
-// [allier src]$ export PATH=/usr/local/cuda/bin:$PATH
-// [allier src]$ export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
-// [allier src]$ source ~/.bashrc
-//
-//--------
 
 #define NX 100
 #define NY 100
@@ -86,8 +86,8 @@ int main() {
 
     // Create output directory if it does not exist
     struct stat st = {0};
-    if (stat("output", &st) == -1) {
-        mkdir("output", 0700);
+    if (stat("output_parallel", &st) == -1) {
+        mkdir("output_parallel", 0700);
     }
 
     for (int step = 0; step < N_STEPS; step++) {
@@ -95,16 +95,16 @@ int main() {
         checkCudaError(cudaGetLastError(), "Kernel launch failed");
         checkCudaError(cudaDeviceSynchronize(), "Kernel execution failed");
 
-        checkCudaError(cudaMemcpy(U, d_U, size, cudaMemcpyDeviceToHost), "Failed to copy U from device to host");
-
-        char filename[100];
-        sprintf(filename, "output/output_%d.dat", step);
-        write_to_file(U, NX, NY, filename);
-
         // Swap pointers
         double* temp = d_U;
         d_U = d_U_next;
         d_U_next = temp;
+
+        checkCudaError(cudaMemcpy(U, d_U, size, cudaMemcpyDeviceToHost), "Failed to copy U from device to host");
+
+        char filename[100];
+        sprintf(filename, "output_parallel/output_%d.dat", step);
+        write_to_file(U, NX, NY, filename);
     }
 
     cudaFree(d_U);

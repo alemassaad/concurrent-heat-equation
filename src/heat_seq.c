@@ -29,7 +29,7 @@ int main() {
         update(U, U_next, nx, ny);
         memcpy(U, U_next, nx * ny * sizeof(double));
         char filename[100];
-        sprintf(filename, "output/output_%d.dat", step);
+        sprintf(filename, "output_seq/output_%d.dat", step);
         write_to_file(U, nx, ny, filename);
     }
 

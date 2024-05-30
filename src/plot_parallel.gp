@@ -8,6 +8,6 @@ unset key
 set view map
 
 do for [i=0:599:1] {
-    set output sprintf('heatmaps/heatmap_%04d.png', i)
-    splot sprintf('output/output_%d.dat', i) matrix with image
+    set output sprintf('heatmaps_parallel/heatmap_%04d.png', i)
+    splot sprintf('output_parallel/output_%d.dat', i) matrix with image
 }
