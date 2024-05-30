@@ -17,10 +17,7 @@ void initialize(double* U, int nx, int ny) {
     }
 
     HeatSource sources[] = {
-        {nx / 2 +5, ny / 2, 100000.0},
-        {nx / 2 -5, ny / 2 +10, 10000.0},
-        {nx / 2 -5, ny / 2 -10, 60000.0},
-        {20, 20, 300000.0}
+        {nx / 2, ny / 2, 100000.0}
     };
     int num_sources = sizeof(sources) / sizeof(HeatSource);
 
