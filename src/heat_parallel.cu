@@ -5,6 +5,16 @@
 #include <sys/types.h>
 #include "initialize.h"
 
+//--------
+//
+// Commands to learn on lab computers to fix cuda path.
+//
+// $ export PATH=/usr/local/cuda/bin:$PATH
+// $ export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+// $ source ~/.bashrc
+//
+//--------
+
 #define NX 100
 #define NY 100
 #define DELTA 0.01
