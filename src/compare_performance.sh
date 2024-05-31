@@ -2,8 +2,8 @@
 
 # Define main variables
 GRID_SIZES=(100 300)
-NUM_STEPS=($(seq 100 200 2000))
-RUNS=10
+NUM_STEPS=($(seq 100 1900 2000))
+RUNS=2
 
 # Create a results directory
 mkdir -p results
@@ -44,19 +44,19 @@ run_cuda() {
     NX=$1
     NY=$1
     STEPS=$2
-    nvcc -o heat_parallel heat_parallel.cu
+    nvcc -o heat_cuda heat_cuda.cu
     export NX
     export NY
     export N_STEPS=$STEPS
     TOTAL_TIME=0
     for ((i=1; i<=RUNS; i++)); do
-        { time -p ./heat_parallel > /dev/null; } 2> temp_cuda.txt
+        { time -p ./heat_cuda > /dev/null; } 2> temp_cuda.txt
         RUN_TIME=$(grep 'real' temp_cuda.txt | awk '{print $2}')
         TOTAL_TIME=$(echo "$TOTAL_TIME + $RUN_TIME" | bc)
     done
     AVG_TIME=$(echo "scale=2; $TOTAL_TIME / $RUNS" | bc)
     echo $AVG_TIME > results/cuda_${NX}_${STEPS}.txt
-    rm -f heat_parallel temp_cuda.txt
+    rm -f heat_cuda temp_cuda.txt
 }
 
 # Start time
@@ -74,10 +74,8 @@ for GRID_SIZE in "${GRID_SIZES[@]}"; do
     print_elapsed_time $start_time "Generating graph for grid size ${GRID_SIZE}"
 
     # Create Python script to generate graph for the current grid size
-    echo "Debug: Creating Python script for grid size ${GRID_SIZE}"
     cat <<EOF > generate_graph_${GRID_SIZE}.py
 import matplotlib.pyplot as plt
-import os
 
 # Define grid size and number of steps
 grid_size = ${GRID_SIZE}
@@ -89,16 +87,10 @@ cuda_times = []
 def convert_time_to_seconds(time_str):
     return float(time_str.strip())
 
-# Debug prints
-print(f"Debug: num_steps = {num_steps}")
-print(f"Debug: grid_size = {grid_size}")
-
 # Parse results
 for steps in num_steps:
     seq_file = f"results/seq_{grid_size}_{steps}.txt"
     cuda_file = f"results/cuda_{grid_size}_{steps}.txt"
-
-    print(f"Debug: Checking files {seq_file} and {cuda_file}")
 
     try:
         with open(seq_file, 'r') as f:
@@ -109,7 +101,6 @@ for steps in num_steps:
             else:
                 seq_times.append(float('inf'))  # Handle missing data
     except FileNotFoundError:
-        print(f"Debug: File not found {seq_file}")
         seq_times.append(float('inf'))
 
     try:
@@ -121,11 +112,7 @@ for steps in num_steps:
             else:
                 cuda_times.append(float('inf'))  # Handle missing data
     except FileNotFoundError:
-        print(f"Debug: File not found {cuda_file}")
         cuda_times.append(float('inf'))
-
-print(f"Debug: seq_times = {seq_times}")
-print(f"Debug: cuda_times = {cuda_times}")
 
 # Plot results
 plt.figure(figsize=(10, 6))
@@ -136,16 +123,9 @@ plt.ylabel('Time (s)')
 plt.title(f'Performance Comparison: Sequential vs CUDA ({grid_size}x{grid_size})')
 plt.legend()
 plt.grid(True)
-output_filename = f'performance_comparison_{grid_size}.png'
-print(f"Debug: Saving figure as {output_filename}")
-plt.savefig(output_filename)
+plt.savefig(f'performance_comparison_{grid_size}.png')
 plt.close()
-
 EOF
-
-    # Debug print to check generated Python script
-    echo "Debug: Content of generate_graph_${GRID_SIZE}.py"
-    cat generate_graph_${GRID_SIZE}.py
 
     # Run Python script to generate graph
     python3 generate_graph_${GRID_SIZE}.py

@@ -3,6 +3,12 @@
 #ifndef INITIALIZE_H
 #define INITIALIZE_H
 
+#define NX 100
+#define NY 100
+#define DELTA 0.01
+#define GAMMA 0.00001
+#define N_STEPS 600
+
 typedef struct {
     int x;
     int y;

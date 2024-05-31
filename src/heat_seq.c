@@ -4,12 +4,6 @@
 #include <math.h>
 #include "initialize.h"
 
-#define NX 100
-#define NY 100
-#define DELTA 0.01
-#define GAMMA 0.00001  // Adjusted for stability
-#define N_STEPS 600
-
 void update(double *U, double *U_next, int nx, int ny);
 void write_to_file(double *U, int nx, int ny, const char *filename);
 

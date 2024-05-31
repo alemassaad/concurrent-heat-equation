@@ -2,7 +2,7 @@
 
 # Directory paths
 seq_dir="output_seq"
-par_dir="output_parallel"
+cuda_dir="output_cuda"
 
 # Number of steps
 n_steps=600
@@ -20,9 +20,9 @@ within_tolerance=true
 for (( i=0; i<n_steps; i++ ))
 do
     seq_file="$seq_dir/output_$i.dat"
-    par_file="$par_dir/output_$i.dat"
+    cuda_file="$cuda_dir/output_$i.dat"
     
-    if diff "$seq_file" "$par_file" > /dev/null; then
+    if diff "$seq_file" "$cuda_file" > /dev/null; then
         if [ "$DEBUG" = true ]; then
             echo "Step $i: Files are identical"
         fi
@@ -42,12 +42,12 @@ do
                 if (diff < 0) diff = -diff
                 if (diff > tol) {
                     if (debug == "true") {
-                        printf "Step %d: Difference at line %d, value %f (seq) vs %f (par)\n", step, FNR, b[i], c[i]
+                        printf "Step %d: Difference at line %d, value %f (seq) vs %f (cuda)\n", step, FNR, b[i], c[i]
                     }
                     exit 1
                 }
             }
-        }' "$seq_file" "$par_file"
+        }' "$seq_file" "$cuda_file"
         
         if [ $? -ne 0 ]; then
             within_tolerance=false
