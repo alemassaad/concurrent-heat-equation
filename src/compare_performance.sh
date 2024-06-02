@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define main variables
-GRID_SIZES=(100 300)
-NUM_STEPS=($(seq 100 1900 2000))
+GRID_SIZES=(100)
+NUM_STEPS=($(seq 200 200 5000))
 RUNS=2
 
 # Create a results directory
@@ -24,19 +24,31 @@ run_seq() {
     NX=$1
     NY=$1
     STEPS=$2
+    RUN_INDEX=$3
     gcc -o heat_seq heat_seq.c -lm
-    export NX
-    export NY
+    export NX=$NX
+    export NY=$NY
     export N_STEPS=$STEPS
+    mkdir -p output_seq heatmaps_seq
     TOTAL_TIME=0
-    for ((i=1; i<=RUNS; i++)); do
-        { time -p ./heat_seq > /dev/null; } 2> temp_seq.txt
-        RUN_TIME=$(grep 'real' temp_seq.txt | awk '{print $2}')
-        TOTAL_TIME=$(echo "$TOTAL_TIME + $RUN_TIME" | bc)
-    done
-    AVG_TIME=$(echo "scale=2; $TOTAL_TIME / $RUNS" | bc)
-    echo $AVG_TIME > results/seq_${NX}_${STEPS}.txt
-    rm -f heat_seq temp_seq.txt
+    { time -p ./heat_seq > /dev/null; } 2> temp_seq.txt
+    RUN_TIME=$(grep 'real' temp_seq.txt | awk '{print $2}')
+    TOTAL_TIME=$(echo "$TOTAL_TIME + $RUN_TIME" | bc)
+    echo $RUN_TIME > results/seq_${NX}_${STEPS}.txt
+    rm -f temp_seq.txt
+
+    # Generate Gnuplot script and heatmaps
+    ./generate_gnuplot_script.sh seq $STEPS
+    gnuplot plot_seq.gp
+
+    # Generate GIFs
+    GIF_DIR="gifs/seq/${NX}x${NY}"
+    mkdir -p $GIF_DIR
+    if ls heatmaps_seq/*.png 1> /dev/null 2>&1; then
+        convert -delay 10 -loop 0 heatmaps_seq/*.png "${GIF_DIR}/heatmap_seq_${NX}x${NY}_${STEPS}steps_run${RUN_INDEX}.gif"
+    else
+        echo "No PNG files found for heatmaps_seq/*.png"
+    fi
 }
 
 # Function to run the CUDA version and measure time
@@ -44,19 +56,31 @@ run_cuda() {
     NX=$1
     NY=$1
     STEPS=$2
+    RUN_INDEX=$3
     nvcc -o heat_cuda heat_cuda.cu
-    export NX
-    export NY
+    export NX=$NX
+    export NY=$NY
     export N_STEPS=$STEPS
+    mkdir -p output_cuda heatmaps_cuda
     TOTAL_TIME=0
-    for ((i=1; i<=RUNS; i++)); do
-        { time -p ./heat_cuda > /dev/null; } 2> temp_cuda.txt
-        RUN_TIME=$(grep 'real' temp_cuda.txt | awk '{print $2}')
-        TOTAL_TIME=$(echo "$TOTAL_TIME + $RUN_TIME" | bc)
-    done
-    AVG_TIME=$(echo "scale=2; $TOTAL_TIME / $RUNS" | bc)
-    echo $AVG_TIME > results/cuda_${NX}_${STEPS}.txt
-    rm -f heat_cuda temp_cuda.txt
+    { time -p ./heat_cuda > /dev/null; } 2> temp_cuda.txt
+    RUN_TIME=$(grep 'real' temp_cuda.txt | awk '{print $2}')
+    TOTAL_TIME=$(echo "$TOTAL_TIME + $RUN_TIME" | bc)
+    echo $RUN_TIME > results/cuda_${NX}_${STEPS}.txt
+    rm -f temp_cuda.txt
+
+    # Generate Gnuplot script and heatmaps
+    ./generate_gnuplot_script.sh cuda $STEPS
+    gnuplot plot_cuda.gp
+
+    # Generate GIFs
+    GIF_DIR="gifs/cuda/${NX}x${NY}"
+    mkdir -p $GIF_DIR
+    if ls heatmaps_cuda/*.png 1> /dev/null 2>&1; then
+        convert -delay 10 -loop 0 heatmaps_cuda/*.png "${GIF_DIR}/heatmap_cuda_${NX}x${NY}_${STEPS}steps_run${RUN_INDEX}.gif"
+    else
+        echo "No PNG files found for heatmaps_cuda/*.png"
+    fi
 }
 
 # Start time
@@ -65,10 +89,12 @@ start_time=$(date +%s)
 # Run tests for different grid sizes and number of steps
 for GRID_SIZE in "${GRID_SIZES[@]}"; do
     for STEPS in "${NUM_STEPS[@]}"; do
-        print_elapsed_time $start_time "Running sequential version with grid size ${GRID_SIZE}x${GRID_SIZE} and ${STEPS} steps"
-        run_seq $GRID_SIZE $STEPS
-        print_elapsed_time $start_time "Running CUDA version with grid size ${GRID_SIZE}x${GRID_SIZE} and ${STEPS} steps"
-        run_cuda $GRID_SIZE $STEPS
+        for ((RUN_INDEX=1; RUN_INDEX<=RUNS; RUN_INDEX++)); do
+            print_elapsed_time $start_time "Running sequential version with grid size ${GRID_SIZE}x${GRID_SIZE}, ${STEPS} steps, run ${RUN_INDEX}"
+            run_seq $GRID_SIZE $STEPS $RUN_INDEX
+            print_elapsed_time $start_time "Running CUDA version with grid size ${GRID_SIZE}x${GRID_SIZE}, ${STEPS} steps, run ${RUN_INDEX}"
+            run_cuda $GRID_SIZE $STEPS $RUN_INDEX
+        done
     done
 
     print_elapsed_time $start_time "Generating graph for grid size ${GRID_SIZE}"
