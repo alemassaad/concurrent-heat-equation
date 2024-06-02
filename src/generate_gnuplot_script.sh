@@ -1,30 +1,38 @@
 #!/bin/bash
 
-if [ "$1" == "seq" ]; then
+if [ "$#" -ne 5 ]; then
+    echo "Usage: $0 [seq|cuda] [N_STEPS] [STEP_INTERVAL] [NX] [NY]"
+    exit 1
+fi
+
+MODE=$1
+N_STEPS=$2
+STEP_INTERVAL=$3
+NX=$4
+NY=$5
+
+if [ "$MODE" == "seq" ]; then
     OUTPUT_DIR="output_seq"
     GNUPLOT_SCRIPT="plot_seq.gp"
     HEATMAPS_DIR="heatmaps_seq"
-elif [ "$1" == "cuda" ]; then
+elif [ "$MODE" == "cuda" ]; then
     OUTPUT_DIR="output_cuda"
     GNUPLOT_SCRIPT="plot_cuda.gp"
     HEATMAPS_DIR="heatmaps_cuda"
 else
-    echo "Usage: $0 [seq|cuda] [N_STEPS] [STEP_INTERVAL]"
+    echo "Invalid mode: $MODE"
     exit 1
 fi
 
-N_STEPS=${2:-60000}
-STEP_INTERVAL=${3:-100}
-
-echo "Generating $GNUPLOT_SCRIPT for $1 with N_STEPS=$N_STEPS and STEP_INTERVAL=$STEP_INTERVAL"
+echo "Generating $GNUPLOT_SCRIPT for $1 with N_STEPS=$N_STEPS, STEP_INTERVAL=$STEP_INTERVAL, NX=$NX, and NY=$NY"
 
 cat <<EOF > $GNUPLOT_SCRIPT
 set terminal png size 800,800
 set pm3d map
 set palette defined (0 "blue", 1 "green", 2 "yellow", 3 "red")
 set cbrange [0:100]
-set xrange [0:99]
-set yrange [0:99]
+set xrange [0:$(($NX-1))]
+set yrange [0:$(($NY-1))]
 unset key
 set view map
 

@@ -1,12 +1,12 @@
 #ifndef INITIALIZE_H
 #define INITIALIZE_H
 
-#define NX 100
-#define NY 100
+#define NX 1000
+#define NY 1000
 #define DELTA 0.01
 #define GAMMA 0.00001
-#define N_STEPS 6000
-#define STEP_INTERVAL 25
+#define N_STEPS 400
+#define STEP_INTERVAL 100
 
 typedef struct {
     int x;
