@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Define main variables
-GRID_SIZES=(1000)
-NUM_STEPS=($(seq 100 100 400))
-RUNS=15
+GRID_SIZES=(1000 1200)
+NUM_STEPS=($(seq 100 100 300))
+RUNS=2
 STEP_INTERVAL=100
 
 # Function to modify initialize.h
@@ -40,28 +40,34 @@ for size in "${GRID_SIZES[@]}"; do
             modify_initialize $size $num $STEP_INTERVAL
             
             # Run heat_seq
-            start_time=$(date +%s)
-            make -s run_seq
-            end_time=$(date +%s)
-            seq_total_time=$((seq_total_time + (end_time - start_time)))
+            start_time=$(date +%s%N)
+            make -s heat_seq
+            end_time=$(date +%s%N)
+            make -s generate_frames_seq
+            seq_total_time=$(echo "$seq_total_time + ($end_time - $start_time) / 1000000000" | bc -l)
 
             # Run gnuplot for seq
             gnuplot plot_seq.gp
 
             # Create GIF for seq
-            convert -delay 10 -loop 0 heatmaps_seq/*.png gifs/seq/${size}x${size}/heat_seq_${size}x${size}_${num}steps_run${i}.gif
+            GIF_PATH_SEQ=gifs/seq/${size}x${size}/heat_seq_${size}x${size}_${num}steps_run${i}.gif
+            convert -delay 10 -loop 0 heatmaps_seq/*.png $GIF_PATH_SEQ
+            echo "Generated $GIF_PATH_SEQ."
 
             # Run heat_cuda
-            start_time=$(date +%s)
-            make -s run_cuda
-            end_time=$(date +%s)
-            cuda_total_time=$((cuda_total_time + (end_time - start_time)))
+            start_time=$(date +%s%N)
+            make -s heat_cuda
+            end_time=$(date +%s%N)
+            make -s generate_frames_cuda
+            cuda_total_time=$(echo "$cuda_total_time + ($end_time - $start_time) / 1000000000" | bc -l)
 
             # Run gnuplot for cuda
             gnuplot plot_cuda.gp
 
             # Create GIF for cuda
-            convert -delay 10 -loop 0 heatmaps_cuda/*.png gifs/cuda/${size}x${size}/heat_cuda_${size}x${size}_${num}steps_run${i}.gif
+            GIF_PATH_CUDA=gifs/cuda/${size}x${size}/heat_cuda_${size}x${size}_${num}steps_run${i}.gif
+            convert -delay 10 -loop 0 heatmaps_cuda/*.png $GIF_PATH_CUDA
+            echo "Generated $GIF_PATH_CUDA."
         
             make -s iclean
         done

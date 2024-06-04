@@ -8,28 +8,28 @@ all: run_seq run_cuda create_gifs
 
 heat_seq: heat_seq.c
 	@gcc -o heat_seq heat_seq.c -lm
-
-heat_cuda: heat_cuda.cu
-	@nvcc -o heat_cuda heat_cuda.cu
-
-run_seq: heat_seq
 	@mkdir -p output_seq heatmaps_seq
 	@echo "Running heat_seq..."
 	@./heat_seq
-	@echo "Generating gnuplot script for seq..."
-	@./generate_gnuplot_script.sh seq $(N_STEPS) $(STEP_INTERVAL) $(NX) $(NY)
-	@echo "Running gnuplot for seq..."
-	@gnuplot plot_seq.gp
-	@echo "Sequential run completed."
 
-run_cuda: heat_cuda
+heat_cuda: heat_cuda.cu
+	@nvcc -o heat_cuda heat_cuda.cu
 	@mkdir -p output_cuda heatmaps_cuda
 	@echo "Running heat_cuda..."
-	@./heat_cuda
-	@echo "Generating gnuplot script for cuda..."
+	@./heat_cuda	
+
+generate_frames_seq:
+	@./generate_gnuplot_script.sh seq $(N_STEPS) $(STEP_INTERVAL) $(NX) $(NY)
+	@gnuplot plot_seq.gp
+
+generate_frames_cuda:
 	@./generate_gnuplot_script.sh cuda $(N_STEPS) $(STEP_INTERVAL) $(NX) $(NY)
-	@echo "Running gnuplot for cuda..."
 	@gnuplot plot_cuda.gp
+	
+run_seq: heat_seq generate_frames_seq
+	@echo "Sequential run completed."
+
+run_cuda: heat_cuda generate_frames_cuda
 	@echo "CUDA run completed."
 
 create_gifs:
@@ -59,7 +59,7 @@ clean:
 	@rm -f generate_graph_*.py
 	@rm -f plot_seq.gp plot_cuda.gp
 	@rm -rf gifs
-	@rm -rf graphs/*
+	@rm -rf graphs
 
 iclean: 
 	@rm -f heat_seq heat_cuda

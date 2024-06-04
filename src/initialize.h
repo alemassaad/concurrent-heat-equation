@@ -1,36 +1,37 @@
 #ifndef INITIALIZE_H
 #define INITIALIZE_H
 
-#define NX 1000
-#define NY 1000
-#define DELTA 0.01
-#define GAMMA 0.00001
-#define N_STEPS 400
+#define NX 1200
+#define NY 1200
+#define DELTA 0.01f
+#define GAMMA 0.00001f
+#define N_STEPS 300
 #define STEP_INTERVAL 100
+#define HEAT_INTENSITY 100000.0f
 
 typedef struct {
-    int x;
-    int y;
+    size_t x;
+    size_t y;
     float intensity;
 } HeatSource;
 
-void initialize(float* U, int nx, int ny) {
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
+void initialize(float* U, size_t nx, size_t ny) {
+    for (size_t i = 0; i < nx; i++) {
+        for (size_t j = 0; j < ny; j++) {
             U[i * ny + j] = 0.0f;
         }
     }
 
     HeatSource sources[] = {
-        {nx / 2, ny / 2, 100000.0f}
+        {nx / 2, ny / 2, HEAT_INTENSITY}
     };
-    int num_sources = sizeof(sources) / sizeof(HeatSource);
+    size_t num_sources = sizeof(sources) / sizeof(HeatSource);
 
-    for (int s = 0; s < num_sources; s++) {
-        int x = sources[s].x;
-        int y = sources[s].y;
+    for (size_t s = 0; s < num_sources; s++) {
+        size_t x = sources[s].x;
+        size_t y = sources[s].y;
         float intensity = sources[s].intensity;
-        if (x >= 0 && x < nx && y >= 0 && y < ny) {
+        if (x < nx && y < ny) {
             U[x * ny + y] = intensity;
         }
     }
