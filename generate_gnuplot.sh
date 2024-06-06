@@ -28,7 +28,7 @@ cat <<EOF > $GNUPLOT_SCRIPT
 set terminal png size 800,800
 set pm3d map
 set palette defined (0 "blue", 1 "green", 2 "yellow", 3 "red")
-set cbrange [0:100]
+set cbrange [-100:100]  # Adjust color range to include negative values
 set xrange [0:$(($NX-1))]
 set yrange [0:$(($NY-1))]
 unset key

@@ -13,7 +13,7 @@ grid_sizes = sys.argv[1:]
 
 for grid_size in grid_sizes:
     # Create a results directory for the graphs of the current grid size
-    os.makedirs(f"graphs/{grid_size}", exist_ok=True)
+    os.makedirs(f"graphs/{grid_size}x{grid_size}", exist_ok=True)
 
     # Read the CSV file for the current grid size
     csv_file = f"results/results_{grid_size}x{grid_size}.csv"
@@ -56,7 +56,7 @@ for grid_size in grid_sizes:
     plt.legend()
 
     # Save the cumulative time plot
-    plt.savefig(f"graphs/{grid_size}/performance_comparison_{grid_size}x{grid_size}_logscale.png")
+    plt.savefig(f"graphs/{grid_size}x{grid_size}/performance_comparison_{grid_size}x{grid_size}_logscale.png")
     plt.close()
 
     # Create a plot for relative performance
@@ -70,7 +70,7 @@ for grid_size in grid_sizes:
     plt.legend()
 
     # Save the relative performance plot
-    plt.savefig(f"graphs/{grid_size}/relative_performance_{grid_size}x{grid_size}.png")
+    plt.savefig(f"graphs/{grid_size}x{grid_size}/relative_performance_{grid_size}x{grid_size}.png")
     plt.close()
 
     # Create a plot for percentage improvement (log scale)
@@ -85,7 +85,7 @@ for grid_size in grid_sizes:
     plt.legend()
 
     # Save the inverse percentage improvement plot
-    plt.savefig(f"graphs/{grid_size}/inverse_percentage_improvement_{grid_size}x{grid_size}_logscale.png")
+    plt.savefig(f"graphs/{grid_size}x{grid_size}/inverse_percentage_improvement_{grid_size}x{grid_size}_logscale.png")
     plt.close()
 
 print("Graphs generated successfully.")
