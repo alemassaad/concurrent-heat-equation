@@ -136,6 +136,7 @@ int main() {
                 fprintf(fp, "\n");
             }
             fclose(fp);
+        printf("Done step: %d\n", step);
         }
     }
 

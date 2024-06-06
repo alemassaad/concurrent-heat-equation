@@ -1,13 +1,13 @@
 #ifndef INITIALIZE_H
 #define INITIALIZE_H
 
-#define NX 1200
-#define NY 1200
+#define NX 800
+#define NY 800
 #define DELTA 0.01f
 #define GAMMA 0.00001f
-#define N_STEPS 300
+#define N_STEPS 1000
 #define STEP_INTERVAL 100
-#define HEAT_INTENSITY 100000.0f
+#define HEAT_INTENSITY 7500000.0f
 
 typedef struct {
     size_t x;

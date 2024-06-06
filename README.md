@@ -10,6 +10,8 @@ Environment Setup:
     $ export PATH=/usr/local/cuda/bin:$PATH
     $ export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
     $ source ~/.bashrc
+Or, alternatively,
+    $ export PATH=/usr/local/cuda/bin:$PATH; export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH; source ~/.bashrc
 ## How to run
 Run sequential and CUDA once:
     $ make 

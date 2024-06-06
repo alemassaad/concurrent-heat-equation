@@ -24,7 +24,7 @@ else
     exit 1
 fi
 
-echo "Generating $GNUPLOT_SCRIPT for $1 with N_STEPS=$N_STEPS, STEP_INTERVAL=$STEP_INTERVAL, NX=$NX, and NY=$NY"
+# echo "Generating $GNUPLOT_SCRIPT for $1 with N_STEPS=$N_STEPS, STEP_INTERVAL=$STEP_INTERVAL, NX=$NX, and NY=$NY"
 
 cat <<EOF > $GNUPLOT_SCRIPT
 set terminal png size 800,800
@@ -45,5 +45,3 @@ for ((i=0; i<=N_STEPS; i+=STEP_INTERVAL)); do
         echo "splot sprintf('$OUTPUT_DIR/output_%d.dat', $i) matrix with image" >> $GNUPLOT_SCRIPT
     fi
 done
-
-echo "$GNUPLOT_SCRIPT generated successfully."

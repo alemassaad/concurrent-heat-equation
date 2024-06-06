@@ -43,6 +43,7 @@ int main() {
             char filename[256];
             snprintf(filename, sizeof(filename), "output_seq/output_%d.dat", step);
             write_to_file(U, nx, ny, filename);
+            printf("Done step: %d\n", step);    
         }
     }
 
