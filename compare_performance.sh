@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Define main variables
-GRID_SIZES=(800)
-NUM_STEPS=($(seq 100 100 1000))
+GRID_SIZES=(600 800)
+NUM_STEPS=4000
 RUNS=2
-STEP_INTERVAL=100
+STEP_INTERVAL=200
 
 # Function to modify initialize.h
 modify_initialize() {
@@ -19,70 +19,69 @@ modify_initialize() {
 }
 
 # Create results directory
-mkdir -p results
+mkdir -p results frames_seq frames_cuda
 
-# Iterate over grid sizes and number of steps
-for size in "${GRID_SIZES[@]}"; do
+# Iterate over grid sizes
+for grid_size in "${GRID_SIZES[@]}"; do
 
-    mkdir -p gifs/seq/${size}x${size} gifs/cuda/${size}x${size}
-    
+    mkdir -p gifs/seq/${grid_size}x${grid_size} gifs/cuda/${grid_size}x${grid_size}
+
     # Initialize CSV file
-    results_csv="results/results_${size}x${size}.csv"
-    echo "grid_size,num_steps,average_seq_time,average_cuda_time" > $results_csv
+    results_csv="results/results_${grid_size}x${grid_size}.csv"
+    echo "grid_size,exec_type,run_num,step,time" > $results_csv
 
-    for num in "${NUM_STEPS[@]}"; do
+    seq_total_time=0
+    cuda_total_time=0
 
-        seq_total_time=0
-        cuda_total_time=0
+    for ((i=0; i<RUNS; i++)); do
+
+        modify_initialize $grid_size $NUM_STEPS $STEP_INTERVAL
         
-        for ((i=0; i<RUNS; i++)); do
+        # Ensure directories are clean before starting
+        make -s iclean
 
-            modify_initialize $size $num $STEP_INTERVAL
-            
-            # Ensure directories are clean before starting
-            make -s iclean
+        # Run heat_seq
+        make -s compile_seq
+        start_time=$(date +%s%N)
+        make -s execute_seq run_num=$((i+1))
+        end_time=$(date +%s%N)
+        seq_time=$(echo "scale=9; ($end_time - $start_time) / 1000000000" | bc -l)
+        seq_total_time=$(echo "$seq_total_time + $seq_time" | bc -l)
+        echo "Run $((i+1)) done in $seq_time seconds (seq)."
 
-            # Run heat_seq
-            make -s compile_seq
-            start_time=$(date +%s%N)
-            make -s execute_seq
-            end_time=$(date +%s%N)
-            make -s generate_frames_seq
-            seq_total_time=$(echo "$seq_total_time + ($end_time - $start_time) / 1000000000" | bc -l)
+        # Run gnuplot for seq
+        ./generate_gnuplot.sh seq $NUM_STEPS $STEP_INTERVAL $grid_size $grid_size
 
-            # Run gnuplot for seq
-            gnuplot plot_seq.gp
+        # Create GIF for seq
+        GIF_PATH_SEQ=gifs/seq/${grid_size}x${grid_size}/heat_seq_${grid_size}x${grid_size}_${NUM_STEPS}steps_run$((i+1)).gif
+        convert -delay 10 -loop 0 $(ls frames_seq/*.png | sort -V) $GIF_PATH_SEQ
+        echo "Generated $GIF_PATH_SEQ."
 
-            # Create GIF for seq
-            GIF_PATH_SEQ=gifs/seq/${size}x${size}/heat_seq_${size}x${size}_${num}steps_run${i}.gif
-            convert -delay 10 -loop 0 $(ls heatmaps_seq/*.png | sort -V) $GIF_PATH_SEQ
-            echo "Generated $GIF_PATH_SEQ."
+        # Run heat_cuda
+        make -s compile_cuda
+        start_time=$(date +%s%N)
+        make -s execute_cuda run_num=$((i+1))
+        end_time=$(date +%s%N)
+        cuda_time=$(echo "scale=9; ($end_time - $start_time) / 1000000000" | bc -l)
+        cuda_total_time=$(echo "$cuda_total_time + $cuda_time" | bc -l)
+        echo "Run $((i+1)) done in $cuda_time seconds (cuda)."
 
-            # Run heat_cuda
-            make -s compile_cuda
-            start_time=$(date +%s%N)
-            make -s execute_cuda
-            end_time=$(date +%s%N)
-            make -s generate_frames_cuda
-            cuda_total_time=$(echo "$cuda_total_time + ($end_time - $start_time) / 1000000000" | bc -l)
+        # Run gnuplot for cuda
+        ./generate_gnuplot.sh cuda $NUM_STEPS $STEP_INTERVAL $grid_size $grid_size
 
-            # Run gnuplot for cuda
-            gnuplot plot_cuda.gp
-
-            # Create GIF for cuda
-            GIF_PATH_CUDA=gifs/cuda/${size}x${size}/heat_cuda_${size}x${size}_${num}steps_run${i}.gif
-            convert -delay 10 -loop 0 $(ls heatmaps_cuda/*.png | sort -V) $GIF_PATH_CUDA
-            echo "Generated $GIF_PATH_CUDA."
+        # Create GIF for cuda
+        GIF_PATH_CUDA=gifs/cuda/${grid_size}x${grid_size}/heat_cuda_${grid_size}x${grid_size}_${NUM_STEPS}steps_run$((i+1)).gif
+        convert -delay 10 -loop 0 $(ls frames_cuda/*.png | sort -V) $GIF_PATH_CUDA
+        echo "Generated $GIF_PATH_CUDA."
         
-            make -s iclean
+        make -s iclean
 
-        done
-        
-        # Calculate average times
-        seq_avg_time=$(echo "scale=2; $seq_total_time / $RUNS" | bc)
-        cuda_avg_time=$(echo "scale=2; $cuda_total_time / $RUNS" | bc)
-
-        # Save to CSV
-        echo "$size,$num,$seq_avg_time,$cuda_avg_time" >> $results_csv
     done
+
+    echo "Total seq time for grid size ${grid_size}: $seq_total_time seconds"
+    echo "Total cuda time for grid size ${grid_size}: $cuda_total_time seconds"
+
+    # Generate graphs for current grid size
+    make -s graph_$grid_size
+
 done

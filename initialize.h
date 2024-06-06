@@ -5,8 +5,8 @@
 #define NY 800
 #define DELTA 0.01f
 #define GAMMA 0.00001f
-#define N_STEPS 1000
-#define STEP_INTERVAL 100
+#define N_STEPS 4000
+#define STEP_INTERVAL 200
 #define HEAT_INTENSITY 7500000.0f
 
 typedef struct {

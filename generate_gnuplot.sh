@@ -14,17 +14,15 @@ NY=$5
 if [ "$MODE" == "seq" ]; then
     OUTPUT_DIR="output_seq"
     GNUPLOT_SCRIPT="plot_seq.gp"
-    HEATMAPS_DIR="heatmaps_seq"
+    FRAMES_DIR="frames_seq"
 elif [ "$MODE" == "cuda" ]; then
     OUTPUT_DIR="output_cuda"
     GNUPLOT_SCRIPT="plot_cuda.gp"
-    HEATMAPS_DIR="heatmaps_cuda"
+    FRAMES_DIR="frames_cuda"
 else
     echo "Invalid mode: $MODE"
     exit 1
 fi
-
-# echo "Generating $GNUPLOT_SCRIPT for $1 with N_STEPS=$N_STEPS, STEP_INTERVAL=$STEP_INTERVAL, NX=$NX, and NY=$NY"
 
 cat <<EOF > $GNUPLOT_SCRIPT
 set terminal png size 800,800
@@ -41,7 +39,10 @@ EOF
 for ((i=0; i<=N_STEPS; i+=STEP_INTERVAL)); do
     FILENAME="$OUTPUT_DIR/output_$i.dat"
     if [ -f "$FILENAME" ]; then
-        echo "set output sprintf('$HEATMAPS_DIR/heatmap_%04d.png', $i)" >> $GNUPLOT_SCRIPT
+        echo "set output sprintf('$FRAMES_DIR/frame_%04d.png', $i)" >> $GNUPLOT_SCRIPT
         echo "splot sprintf('$OUTPUT_DIR/output_%d.dat', $i) matrix with image" >> $GNUPLOT_SCRIPT
     fi
 done
+
+# Execute the gnuplot script
+gnuplot $GNUPLOT_SCRIPT

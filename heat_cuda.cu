@@ -66,7 +66,14 @@ void test_filename_truncation() {
     printf("Test passed: Filename is within buffer limits.\n");
 }
 
-int main() {
+int main(int argc, char **argv) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <run_num>\n", argv[0]);
+        return 1;
+    }
+
+    int run_num = atoi(argv[1]);
+
     int size = NX * NY * sizeof(float);
     float* U = (float*)calloc(NX * NY, sizeof(float));
     float* U_next = (float*)calloc(NX * NY, sizeof(float));
@@ -104,20 +111,58 @@ int main() {
         mkdir("output_cuda", 0700);
         printf("Created directory: output_cuda\n");
     }
-    if (stat("heatmaps_cuda", &st) == -1) {
-        mkdir("heatmaps_cuda", 0700);
-        printf("Created directory: heatmaps_cuda\n");
+    if (stat("frames_cuda", &st) == -1) {
+        mkdir("frames_cuda", 0700);
+        printf("Created directory: frames_cuda\n");
     }
 
-    for (int step = 0; step < N_STEPS; step++) {
+    char csv_filename[256];
+    snprintf(csv_filename, sizeof(csv_filename), "results/results_%dx%d.csv", NX, NY);
+
+    int last_complete_step = -1;
+    FILE *csv_file = fopen(csv_filename, "r");
+    if (csv_file != NULL) {
+        char line[256];
+        while (fgets(line, sizeof(line), csv_file)) {
+            int step;
+            char *ptr = strrchr(line, ',');
+            if (ptr && *(ptr + 1) == '\n') {
+                sscanf(line, "%*d,%*[^,],%*d,%d,%*f", &step);
+                last_complete_step = step;
+            }
+        }
+        fclose(csv_file);
+    }
+
+    csv_file = fopen(csv_filename, "a");
+    if (csv_file == NULL) {
+        fprintf(stderr, "Error opening CSV file %s\n", csv_filename);
+        return 1;
+    }
+
+    struct timespec start, end;
+    double cumulative_time = 0.0;
+
+    for (int step = last_complete_step + 1; step <= N_STEPS; step++) {
+        clock_gettime(CLOCK_MONOTONIC, &start);
         update<<<numBlocks, threadsPerBlock>>>(d_U, d_U_next, NX, NY, lambda);
         checkCudaError(cudaGetLastError(), "Kernel launch failed");
         checkCudaError(cudaDeviceSynchronize(), "Kernel execution failed");
+        clock_gettime(CLOCK_MONOTONIC, &end);
 
         // Swap pointers
         float* temp = d_U;
         d_U = d_U_next;
         d_U_next = temp;
+
+        double elapsed_time;
+        if (end.tv_nsec < start.tv_nsec) {
+            elapsed_time = (end.tv_sec - start.tv_sec - 1) + (end.tv_nsec + 1e9 - start.tv_nsec) * 1e-9;
+        } else {
+            elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) * 1e-9;
+        }
+
+        cumulative_time += elapsed_time;
 
         if (step % STEP_INTERVAL == 0) {
             checkCudaError(cudaMemcpy(U, d_U, size, cudaMemcpyDeviceToHost), "Failed to copy U from device to host");
@@ -136,7 +181,9 @@ int main() {
                 fprintf(fp, "\n");
             }
             fclose(fp);
-        printf("Done step: %d\n", step);
+
+            fprintf(csv_file, "%d,cuda,%d,%d,%f\n", NX, run_num, step, cumulative_time);
+            printf("Done step: %d in %f seconds (cumulative time: %f)\n", step, elapsed_time, cumulative_time);
         }
     }
 
@@ -145,7 +192,7 @@ int main() {
     free(U);
     free(U_next);
 
-    // test_filename_truncation();
+    fclose(csv_file);
 
     return 0;
 }

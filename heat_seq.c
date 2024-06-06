@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <sys/stat.h>
+#include <time.h>
 #include "initialize.h"
 
 #define OWNER_FULL_PERMISSIONS 0700 // Permissions: owner read, write, execute only
@@ -11,7 +12,14 @@ void update(float *U, float *U_next, int nx, int ny);
 void write_to_file(const float *U, int nx, int ny, const char *filename);
 void create_directory(const char *dirname);
 
-int main() {
+int main(int argc, char **argv) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <run_num>\n", argv[0]);
+        return 1;
+    }
+
+    int run_num = atoi(argv[1]);
+
     int nx = NX, ny = NY;
     float *U = (float *)malloc(nx * ny * sizeof(float));
     float *U_next = (float *)malloc(nx * ny * sizeof(float));
@@ -23,7 +31,7 @@ int main() {
 
     initialize(U, nx, ny);
     create_directory("output_seq");
-    create_directory("heatmaps_seq");
+    create_directory("frames_seq");
 
     float lambda = GAMMA / (DELTA * DELTA);
     if (lambda >= 0.5) {
@@ -33,17 +41,57 @@ int main() {
         return 1;
     }
 
-    for (int step = 0; step < N_STEPS; step++) {
+    char csv_filename[256];
+    snprintf(csv_filename, sizeof(csv_filename), "results/results_%dx%d.csv", nx, ny);
+
+    int last_complete_step = -1;
+    FILE *csv_file = fopen(csv_filename, "r");
+    if (csv_file != NULL) {
+        char line[256];
+        while (fgets(line, sizeof(line), csv_file)) {
+            int step;
+            char *ptr = strrchr(line, ',');
+            if (ptr && *(ptr + 1) == '\n') {
+                sscanf(line, "%*d,%*[^,],%*d,%d,%*f", &step);
+                last_complete_step = step;
+            }
+        }
+        fclose(csv_file);
+    }
+
+    csv_file = fopen(csv_filename, "a");
+    if (csv_file == NULL) {
+        fprintf(stderr, "Error opening CSV file %s\n", csv_filename);
+        return 1;
+    }
+
+    struct timespec start, end;
+    double cumulative_time = 0.0;
+
+    for (int step = last_complete_step + 1; step <= N_STEPS; step++) {
+        clock_gettime(CLOCK_MONOTONIC, &start);
         update(U, U_next, nx, ny);
+        clock_gettime(CLOCK_MONOTONIC, &end);
+
         float *temp = U;
         U = U_next;
         U_next = temp;
 
-        if (step % STEP_INTERVAL == 0) {  
+        double elapsed_time;
+        if (end.tv_nsec < start.tv_nsec) {
+            elapsed_time = (end.tv_sec - start.tv_sec - 1) + (end.tv_nsec + 1e9 - start.tv_nsec) * 1e-9;
+        } else {
+            elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) * 1e-9;
+        }
+
+        cumulative_time += elapsed_time;
+
+        if (step % STEP_INTERVAL == 0) {
             char filename[256];
             snprintf(filename, sizeof(filename), "output_seq/output_%d.dat", step);
             write_to_file(U, nx, ny, filename);
-            printf("Done step: %d\n", step);    
+            fprintf(csv_file, "%d,seq,%d,%d,%f\n", nx, run_num, step, cumulative_time);
+            printf("Done step %d in %f seconds (cumulative time: %f)\n", step, elapsed_time, cumulative_time);
         }
     }
 
@@ -52,6 +100,7 @@ int main() {
     snprintf(filename, sizeof(filename), "output_seq/output_%d.dat", N_STEPS);
     write_to_file(U, nx, ny, filename);
 
+    fclose(csv_file);
     free(U);
     free(U_next);
 

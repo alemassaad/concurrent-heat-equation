@@ -17,32 +17,24 @@ compile_cuda: heat_cuda.cu
 	@echo "Compilation done: created heat_cuda"
 
 execute_seq:
-	@mkdir -p output_seq heatmaps_seq
-	@echo "Executing heat_seq"
-	@start_time=$$(date +%s%N); \
-	./heat_seq; \
-	end_time=$$(date +%s%N); \
-	exec_time=$$((end_time - start_time)); \
-	exec_time_sec=$$(echo "scale=9; $$exec_time / 1000000000" | bc); \
-	echo "SEQ Execution done in $$exec_time_sec seconds"
+	@mkdir -p output_seq frames_seq
+	@echo "Executing heat_seq with run number $(run_num)"
+	@./heat_seq $(run_num)
+	@echo "SEQ Execution done"
 
 
 execute_cuda:
-	@mkdir -p output_cuda heatmaps_cuda
-	@echo "Executing heat_cuda"
-	@start_time=$$(date +%s%N); \
-	./heat_cuda; \
-	end_time=$$(date +%s%N); \
-	exec_time=$$((end_time - start_time)); \
-	exec_time_sec=$$(echo "scale=9; $$exec_time / 1000000000" | bc); \
-	echo "CUDA Execution done in $$exec_time_sec seconds"
+	@mkdir -p output_cuda frames_cuda
+	@echo "Executing heat_cuda with run number $(run_num)"
+	@./heat_cuda $(run_num)
+	@echo "CUDA Execution done"
 
 generate_frames_seq:
-	@./generate_gnuplot_script.sh seq $(N_STEPS) $(STEP_INTERVAL) $(NX) $(NY)
+	@./generate_gnuplot.sh seq $(N_STEPS) $(STEP_INTERVAL) $(NX) $(NY)
 	@gnuplot plot_seq.gp
 
 generate_frames_cuda:
-	@./generate_gnuplot_script.sh cuda $(N_STEPS) $(STEP_INTERVAL) $(NX) $(NY)
+	@./generate_gnuplot.sh cuda $(N_STEPS) $(STEP_INTERVAL) $(NX) $(NY)
 	@gnuplot plot_cuda.gp
 
 run_seq: compile_seq execute_seq generate_frames_seq
@@ -53,31 +45,34 @@ run_cuda: compile_cuda execute_cuda generate_frames_cuda
 
 generate_gif_seq:
 	@echo "Generating SEQ GIF"
-	@convert -delay 10 -loop 0 $(shell ls heatmaps_seq/*.png | sort -V) heatmap_seq.gif
+	@convert -delay 10 -loop 0 $(shell ls frames_seq/*.png | sort -V) heatmap_seq.gif
 	@echo "SEQ GIF generated"
 
 generate_gif_cuda:
 	@echo "Generating CUDA GIF"
-	@convert -delay 10 -loop 0 $(shell ls heatmaps_cuda/*.png | sort -V) heatmap_cuda.gif
+	@convert -delay 10 -loop 0 $(shell ls frames_cuda/*.png | sort -V) heatmap_cuda.gif
 	@echo "CUDA GIF generated"
 
 performance:
 	@chmod +x compare_performance.sh
 	@./compare_performance.sh
-	@$(MAKE) -s generate_graphs
 
-generate_graphs: $(patsubst %, graph_%, $(GRID_SIZES))
+generate_graphs:
+	@$(MAKE) -s graph_all
+
+graph_all: $(patsubst %, graph_%, $(GRID_SIZES))
 
 graph_%:
 	@echo "Generating graphs for grid size $*"
+	@mkdir -p graphs/$*
 	@python3 generate_graphs.py $*
 
 clean:
 	@rm -f heat_seq heat_cuda plot_seq.gp plot_cuda.gp heatmap_seq.gif heatmap_cuda.gif
-	@rm -rf output_seq/* output_cuda/* heatmaps_seq/* heatmaps_cuda/* results/* gifs/* graphs/*
+	@rm -rf output_seq/* output_cuda/* frames_seq/* frames_cuda/* results/* gifs/* graphs/*
 
 iclean: 
 	@rm -f heat_seq heat_cuda plot_seq.gp plot_cuda.gp
-	@rm -rf heatmaps_seq/* heatmaps_cuda/* output_seq/* output_cuda/*
+	@rm -rf frames_seq/* frames_cuda/* output_seq/* output_cuda/*
 
 .PHONY: clean run_seq run_cuda generate_gif_seq generate_gif_cuda performance
