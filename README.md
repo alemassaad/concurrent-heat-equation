@@ -13,10 +13,8 @@ Environment Setup:
 Or, alternatively,
     $ export PATH=/usr/local/cuda/bin:$PATH; export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH; source ~/.bashrc
 ## How to run
-Run sequential and CUDA once:
+Run comparison performance between CUDA and seq, after having modified the compare_performance.sh and initialize.h scripts:
     $ make 
-Run sequential and CUDA systematically for a list of parameters:
-    $ make performance
 Clean up:
     $ make clean
 ## Customization
@@ -27,11 +25,12 @@ Modify parameters in initialize.h to customize the simulation:
     #define GAMMA 0.00001f
     #define N_STEPS 300
     #define STEP_INTERVAL 100
-    #define HEAT_INTENSITY 100000.0f
+
 To systematically test multiple configurations, edit compare_performance.sh:
     GRID_SIZES=(1000 1200)
     NUM_STEPS=($(seq 100 100 300))
     RUNS=2
     STEP_INTERVAL=100
+
 ## Conclusion
 This project demonstrates the performance benefits of using CUDA for parallelizing computational tasks like solving the heat equation. By following the instructions, you can execute, compare, and visualize the performance of sequential and parallel implementations.
